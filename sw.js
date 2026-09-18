@@ -1,5 +1,5 @@
 // eformsign 서명 가이드 PWA service worker — 앱 셸 + 스크린샷 캐시 (오프라인 열람 가능)
-const CACHE = "eformsign-guide-v1";
+const CACHE = "eformsign-guide-v2";
 const SHELL = ["./", "./index.html", "./manifest.json",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png",
   "./assets/s01.jpg","./assets/s02.jpg","./assets/s03.jpg","./assets/s04.jpg","./assets/s05.jpg","./assets/s06.jpg","./assets/s07.jpg","./assets/s08.jpg",

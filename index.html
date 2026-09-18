@@ -96,6 +96,37 @@ a{ color:#4d8dff; text-decoration:none; }
   background:var(--blue); color:#fff; font-size:12.5px; font-weight:800; letter-spacing:.02em; writing-mode:vertical-rl; box-shadow:10px 0 26px rgba(0,0,0,.45); transition:left .38s cubic-bezier(.2,.75,.2,1); animation:tabNudge 3.2s ease-in-out infinite; }
 #tab.open{ left:min(330px,86vw); animation:none; }
 
+/* cover + end modal */
+#cover{ position:fixed; inset:0; z-index:80; background:radial-gradient(120% 80% at 50% 0%, #17223a 0%, var(--bg) 60%); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; text-align:center;
+  padding:calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 28px); transition:opacity .4s ease, visibility .4s; }
+#cover.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+#cover .logo{ width:84px; height:84px; border-radius:20px; background:var(--blue); display:grid; place-items:center; box-shadow:0 18px 44px rgba(24,87,196,.35); }
+#cover .logo svg{ width:56px; height:56px; }
+#cover .k{ font-size:12px; letter-spacing:.16em; color:#6d7b90; font-weight:700; }
+#cover h2{ margin:0; font-size:clamp(24px,6.4vw,32px); font-weight:800; letter-spacing:-.02em; line-height:1.25; }
+#cover p{ margin:0; font-size:15px; line-height:1.65; color:#b3bdcb; max-width:340px; text-wrap:pretty; }
+#cover .meta{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+#cover .meta span{ padding:6px 11px; border-radius:999px; background:#151b24; border:1px solid var(--line2); font-size:12.5px; color:#9aa7b9; font-weight:600; }
+#cover .go{ margin-top:6px; padding:16px 44px; border-radius:14px; border:0; background:var(--blue); color:#fff; font-size:17px; font-weight:800; letter-spacing:-.01em; box-shadow:0 12px 30px rgba(24,87,196,.4); min-height:52px; }
+#cover .go:active{ transform:scale(.98); }
+#cover .hint{ font-size:12.5px; color:#6d7b90; }
+
+#end{ position:fixed; inset:0; z-index:90; background:rgba(6,8,12,.72); display:none; align-items:center; justify-content:center; padding:24px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+#end.on{ display:flex; }
+#end .card{ width:min(380px,100%); background:#131922; border:1px solid var(--line2); border-radius:20px; padding:28px 22px 20px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,.6); animation:capIn .3s ease both; }
+#end .ok{ width:64px; height:64px; border-radius:50%; background:#00b386; display:grid; place-items:center; box-shadow:0 0 0 8px rgba(0,179,134,.15); }
+#end .ok svg{ width:34px; height:34px; }
+#end h3{ margin:4px 0 0; font-size:21px; font-weight:800; letter-spacing:-.02em; }
+#end p{ margin:0; font-size:14.5px; line-height:1.6; color:#b3bdcb; text-wrap:pretty; }
+#end .acts{ display:flex; flex-direction:column; gap:8px; width:100%; margin-top:8px; }
+#end .acts .btn{ width:100%; padding:14px; font-size:15px; }
+#end .fb{ display:none; font-size:13px; line-height:1.55; color:#ffb3ad; font-weight:600; }
+#end.nofb .fb{ display:block; }
+
+/* rail drag */
+#rail.drag, #tab.drag, #backdrop.drag{ transition:none; }
+#tab{ touch-action:none; user-select:none; -webkit-user-select:none; }
+
 @media (min-width:768px){ .hd .s .kb{ display:inline; } .chip{ padding:9px 14px; font-size:13px; } #app{ gap:12px; } }
 @media (max-width:420px){ .hd{ gap:8px; } .hd .s{ font-size:12px; } }
 </style>
@@ -147,7 +178,28 @@ a{ color:#4d8dff; text-decoration:none; }
 </aside>
 <div id="backdrop"></div>
 <button id="tab" type="button">진행 순서 ▶</button>
+<div id="cover" role="dialog" aria-label="안내 가이드 시작">
+  <div class="logo"><svg viewBox="0 0 120 120" aria-hidden="true"><rect x="42" y="24" width="36" height="72" rx="7" fill="#0e1116"/><rect x="46" y="30" width="28" height="52" rx="3" fill="#e8ecf2"/><rect x="48" y="66" width="24" height="10" rx="3" fill="none" stroke="#ff3b30" stroke-width="3"/></svg></div>
+  <div class="k">EFORMSIGN · 전자계약</div>
+  <h2>전자서명 진행<br>안내 가이드입니다</h2>
+  <p>알림톡 수신부터 서명 완료까지의 절차를 화면별로 안내합니다. 순차적으로 확인 부탁드립니다.</p>
+  <div class="meta"><span>총 <b id="coverTotal">15</b>단계</span><span>약 3분</span><span>좌우로 밀어 이동</span></div>
+  <button class="go" id="bStart" type="button">시작하기</button>
+  <div class="hint">개인정보가 보이는 화면은 블러 처리되어 있습니다</div>
+</div>
 
+<div id="end" role="dialog" aria-modal="true" aria-label="안내 종료">
+  <div class="card">
+    <div class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h3>안내가 모두 끝났습니다</h3>
+    <p>이 순서대로 진행하시면 전자서명이 완료됩니다.<br>서명 중 막히는 단계가 있으면 다시 열어 확인해 주세요.</p>
+    <div class="acts">
+      <button class="btn pri" id="bRestart" type="button">처음부터 다시 보기</button>
+      <button class="btn" id="bExit" type="button">끝내기</button>
+    </div>
+    <div class="fb">이 화면은 브라우저가 직접 닫을 수 없습니다. 브라우저의 닫기(✕) 버튼으로 종료해 주세요.</div>
+  </div>
+</div>
 <script>
 const STEPS = [
   { n:'01', phase:'1. 알림톡 확인', title:'알림톡에서 서명 시작', caption:'카카오톡 알림톡의 [문서 서명하기] 버튼을 누릅니다.', note:'서명 기한 내에 진행해 주세요.',
@@ -188,7 +240,8 @@ const state = { i: 0, dim: true, zoom: false, playing: false, rail: false };
 let timer = null;
 
 // deep link: #step-3
-(function(){ const m = location.hash.match(/step-(\d+)/); if (m) state.i = Math.max(0, Math.min(STEPS.length - 1, +m[1] - 1)); })();
+let deepLinked = false;
+(function(){ const m = location.hash.match(/step-(\d+)/); if (m) { state.i = Math.max(0, Math.min(STEPS.length - 1, +m[1] - 1)); deepLinked = true; } })();
 
 function buildRail(){
   const names = []; STEPS.forEach(s => { if (!names.includes(s.phase)) names.push(s.phase); });
@@ -216,7 +269,7 @@ function render(){
   $('stepNo').textContent = i + 1; $('cnt').textContent = i + 1;
   $('phase').textContent = st.phase; $('caption').textContent = st.caption; $('note').textContent = st.note || '';
   $('prog').style.width = ((i + 1) / STEPS.length * 100) + '%';
-  $('bPrev').disabled = i === 0; $('bNext').textContent = i === STEPS.length - 1 ? '처음으로 ↺' : '다음 →';
+  $('bPrev').disabled = i === 0; $('bNext').textContent = i === STEPS.length - 1 ? '끝 ✓' : '다음 →';
   document.documentElement.style.setProperty('--dim', state.dim ? .5 : 0);
 
   const L = $('layers'); L.innerHTML = '';
@@ -262,14 +315,60 @@ function setPlay(on){
 function setRail(on){ state.rail = on; $('rail').classList.toggle('open', on); $('backdrop').classList.toggle('on', on); $('tab').classList.toggle('open', on); $('tab').textContent = on ? '◀ 닫기' : '진행 순서 ▶'; }
 
 $('bPrev').addEventListener('click', () => go(state.i - 1));
-$('bNext').addEventListener('click', () => { if (state.i >= STEPS.length - 1) go(0); else go(state.i + 1); });
+$('bNext').addEventListener('click', () => { if (state.i >= STEPS.length - 1) showEnd(true); else go(state.i + 1); });
+
+// ---- cover ----
+function hideCover(){ $('cover').classList.add('hide'); }
+$('bStart').addEventListener('click', hideCover);
+$('coverTotal').textContent = STEPS.length;
+if (deepLinked) hideCover();
+
+// ---- end modal ----
+function showEnd(on){ if (on && state.playing) setPlay(false); $('end').classList.toggle('on', on); $('end').classList.remove('nofb'); }
+$('bRestart').addEventListener('click', () => { showEnd(false); go(0); });
+$('bExit').addEventListener('click', () => {
+  // 스크립트/링크로 열린 창만 닫힘. 닫히지 않으면 안내 문구 표시.
+  try { window.close(); } catch (e) {}
+  setTimeout(() => { if (window.closed || document.visibilityState === 'hidden') return; $('end').classList.add('nofb'); }, 250);
+});
+$('end').addEventListener('click', e => { if (e.target === $('end')) showEnd(false); });
 $('bDim').addEventListener('click', () => { state.dim = !state.dim; render(); });
 $('bZoom').addEventListener('click', () => { state.zoom = !state.zoom; render(); });
 $('bPlay').addEventListener('click', () => setPlay(!state.playing));
-$('tab').addEventListener('click', () => setRail(!state.rail));
+// 탭: 클릭 토글 + 잡아끌기(드래그)로 열고 닫기
+(function(){
+  const tab = $('tab'), rail = $('rail'), bd = $('backdrop');
+  const W = () => rail.getBoundingClientRect().width;
+  let x0 = null, dragging = false, startOpen = false, pid = null;
+  tab.addEventListener('pointerdown', e => { x0 = e.clientX; dragging = false; startOpen = state.rail; pid = e.pointerId; try { tab.setPointerCapture(pid); } catch (err) {} });
+  tab.addEventListener('pointermove', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0;
+    if (!dragging && Math.abs(dx) < 6) return;
+    dragging = true;
+    const w = W();
+    const off = Math.max(-w, Math.min(0, (startOpen ? 0 : -w) + dx));   // -w(닫힘) ~ 0(열림)
+    rail.classList.add('drag'); tab.classList.add('drag'); bd.classList.add('drag');
+    rail.style.transform = 'translateX(' + off + 'px)';
+    tab.style.left = (w + off) + 'px'; tab.style.animation = 'none';
+    bd.classList.add('on'); bd.style.opacity = String(1 + off / w);
+  });
+  const finish = e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, w = W();
+    rail.classList.remove('drag'); tab.classList.remove('drag'); bd.classList.remove('drag');
+    rail.style.transform = ''; tab.style.left = ''; tab.style.animation = ''; bd.style.opacity = '';
+    if (!dragging) setRail(!state.rail);
+    else if (startOpen) setRail(dx > -w * 0.3);
+    else setRail(dx > w * 0.3);
+    x0 = null; dragging = false;
+    try { tab.releasePointerCapture(pid); } catch (err) {}
+  };
+  tab.addEventListener('pointerup', finish); tab.addEventListener('pointercancel', finish);
+})();
 $('bClose').addEventListener('click', () => setRail(false));
 $('backdrop').addEventListener('click', () => setRail(false));
-window.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(state.i + 1); if (e.key === 'ArrowLeft') go(state.i - 1); if (e.key === 'Escape') setRail(false); });
+window.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(state.i + 1); if (e.key === 'ArrowLeft') go(state.i - 1); if (e.key === 'Escape') { setRail(false); showEnd(false); } if (e.key === 'Enter' && !$('cover').classList.contains('hide')) hideCover(); });
 
 // swipe on the phone frame
 (function(){
