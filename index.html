@@ -46,7 +46,13 @@ a{ color:#4d8dff; text-decoration:none; }
 /* stage */
 .stage{ display:flex; flex-direction:column; align-items:center; gap:clamp(8px,1.4vh,14px); flex:1 1 auto; min-height:0; }
 .phone{ position:relative; aspect-ratio:1080/2402; flex:1 1 auto; min-height:120px; max-width:100%; border-radius:22px; overflow:hidden; background:#000;
-  container-type:inline-size; box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px #262f3d; touch-action:pan-y; }
+  container-type:inline-size; box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px #262f3d; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.pz{ position:absolute; inset:0; transform-origin:0 0; will-change:transform; }
+.pz.anim{ transition:transform .28s cubic-bezier(.2,.7,.2,1); }
+.phone.zoomed{ cursor:grab; }
+.zreset{ position:absolute; z-index:5; top:10px; right:10px; padding:7px 11px; border-radius:999px; border:1px solid rgba(255,255,255,.25); background:rgba(14,17,22,.82); color:#fff; font-size:12px; font-weight:700; white-space:nowrap;
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); opacity:0; pointer-events:none; transition:opacity .2s ease; }
+.phone.zoomed .zreset{ opacity:1; pointer-events:auto; }
 .zoom{ position:absolute; inset:0; transition:transform .5s cubic-bezier(.2,.7,.2,1); transform-origin:50% 50%; }
 .shot{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
 .veil{ position:absolute; inset:0; background:rgba(8,10,14,var(--dim)); transition:background .3s ease; }
@@ -148,11 +154,14 @@ a{ color:#4d8dff; text-decoration:none; }
 
   <div class="stage">
     <div class="phone" id="phone">
-      <div class="zoom" id="zoom">
-        <img class="shot" id="shot" alt="" decoding="async">
-        <div class="veil"></div>
-        <div id="layers"></div>
+      <div class="pz" id="pz">
+        <div class="zoom" id="zoom">
+          <img class="shot" id="shot" alt="" decoding="async" draggable="false">
+          <div class="veil"></div>
+          <div id="layers"></div>
+        </div>
       </div>
+      <button class="zreset" id="bZReset" type="button" aria-label="원래 크기로"><span id="zTxt">2.0×</span> · 원래 크기</button>
     </div>
 
     <div class="bottom">
@@ -183,7 +192,7 @@ a{ color:#4d8dff; text-decoration:none; }
   <div class="k">EFORMSIGN · 전자계약</div>
   <h2>전자서명 진행<br>안내 가이드입니다</h2>
   <p>알림톡 수신부터 서명 완료까지의 절차를 화면별로 안내합니다. 순차적으로 확인 부탁드립니다.</p>
-  <div class="meta"><span>총 <b id="coverTotal">15</b>단계</span><span>약 3분</span><span>좌우로 밀어 이동</span></div>
+  <div class="meta"><span>총 <b id="coverTotal">15</b>단계</span><span>약 3분</span><span>좌우로 밀어 이동</span><span>두 손가락으로 확대</span></div>
   <button class="go" id="bStart" type="button">시작하기</button>
   <div class="hint">개인정보가 보이는 화면은 블러 처리되어 있습니다</div>
 </div>
@@ -306,7 +315,7 @@ function render(){
   preload(i + 1); preload(i + 2);
 }
 
-function go(n){ state.i = Math.max(0, Math.min(STEPS.length - 1, n)); render(); }
+function go(n){ pinch.reset(false); state.i = Math.max(0, Math.min(STEPS.length - 1, n)); render(); }
 function setPlay(on){
   if (timer) { clearInterval(timer); timer = null; }
   if (on) timer = setInterval(() => { if (state.i >= STEPS.length - 1) { setPlay(false); return; } go(state.i + 1); }, 4600);
@@ -333,7 +342,7 @@ $('bExit').addEventListener('click', () => {
 });
 $('end').addEventListener('click', e => { if (e.target === $('end')) showEnd(false); });
 $('bDim').addEventListener('click', () => { state.dim = !state.dim; render(); });
-$('bZoom').addEventListener('click', () => { state.zoom = !state.zoom; render(); });
+$('bZoom').addEventListener('click', () => { pinch.reset(true); state.zoom = !state.zoom; render(); });
 $('bPlay').addEventListener('click', () => setPlay(!state.playing));
 // 탭: 클릭 토글 + 잡아끌기(드래그)로 열고 닫기
 (function(){
@@ -370,18 +379,130 @@ $('bClose').addEventListener('click', () => setRail(false));
 $('backdrop').addEventListener('click', () => setRail(false));
 window.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(state.i + 1); if (e.key === 'ArrowLeft') go(state.i - 1); if (e.key === 'Escape') { setRail(false); showEnd(false); } if (e.key === 'Enter' && !$('cover').classList.contains('hide')) hideCover(); });
 
-// swipe on the phone frame
-(function(){
-  let x0 = null, y0 = null, t0 = 0;
-  const el = $('phone');
-  el.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); }, { passive: true });
+// phone frame gestures: 두 손가락 핀치 줌 · 확대 중 한 손가락 이동 · 두 번 탭 · (원래 크기일 때만) 좌우 스와이프
+const pinch = (function(){
+  const el = $('phone'), pz = $('pz');
+  const MAX = 4, DBL = 2.5;
+  let s = 1, tx = 0, ty = 0;                       // 현재 배율·이동(px, 프레임 좌상단 기준)
+  let g = null;                                    // 진행 중 제스처
+  let lastTap = 0, lastTapX = 0, lastTapY = 0, suppressClick = false;
+
+  const rect = () => el.getBoundingClientRect();
+  function clamp(){
+    const r = rect();
+    s = Math.max(1, Math.min(MAX, s));
+    tx = Math.min(0, Math.max(r.width - r.width * s, tx));
+    ty = Math.min(0, Math.max(r.height - r.height * s, ty));
+  }
+  function apply(anim){
+    clamp();
+    pz.classList.toggle('anim', !!anim);
+    pz.style.transform = s === 1 ? '' : 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + s.toFixed(3) + ')';
+    el.classList.toggle('zoomed', s > 1.01);
+    $('zTxt').textContent = s.toFixed(1) + '×';
+  }
+  function reset(anim){ s = 1; tx = 0; ty = 0; g = null; apply(anim); }
+  function zoomAt(cx, cy, ns, anim){               // (cx,cy) = 프레임 기준 좌표. 그 지점을 고정한 채 배율 변경
+    const px = (cx - tx) / s, py = (cy - ty) / s;
+    s = Math.max(1, Math.min(MAX, ns)); tx = cx - px * s; ty = cy - py * s; apply(anim);
+  }
+  const zoomed = () => s > 1.01;
+  const pt = (t, r) => ({ x: t.clientX - r.left, y: t.clientY - r.top });
+
+  el.addEventListener('touchstart', e => {
+    const r = rect();
+    pz.classList.remove('anim');
+    if (e.touches.length >= 2) {
+      const a = pt(e.touches[0], r), b = pt(e.touches[1], r);
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      g = { type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, s0: s, px: (mx - tx) / s, py: (my - ty) / s, multi: true };
+      if (state.playing) setPlay(false);
+      e.preventDefault();
+    } else {
+      const a = pt(e.touches[0], r);
+      g = { type: zoomed() ? 'pan' : 'swipe', x0: a.x, y0: a.y, tx0: tx, ty0: ty, t0: Date.now(), moved: 0, multi: false };
+    }
+  }, { passive: false });
+
+  el.addEventListener('touchmove', e => {
+    if (!g) return;
+    const r = rect();
+    if (g.type === 'pinch' && e.touches.length >= 2) {
+      const a = pt(e.touches[0], r), b = pt(e.touches[1], r);
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      s = Math.max(1, Math.min(MAX, g.s0 * Math.hypot(a.x - b.x, a.y - b.y) / g.d0));
+      tx = mx - g.px * s; ty = my - g.py * s;      // 손가락 중점 아래의 이미지 지점을 그대로 유지
+      apply(false); e.preventDefault();
+    } else if (g.type === 'pan' && e.touches.length === 1) {
+      const a = pt(e.touches[0], r);
+      g.moved = Math.max(g.moved, Math.hypot(a.x - g.x0, a.y - g.y0));
+      tx = g.tx0 + (a.x - g.x0); ty = g.ty0 + (a.y - g.y0);
+      apply(false); e.preventDefault();
+    } else if (g.type === 'swipe') {
+      const a = pt(e.touches[0], r);
+      g.moved = Math.max(g.moved, Math.hypot(a.x - g.x0, a.y - g.y0));
+    }
+  }, { passive: false });
+
   el.addEventListener('touchend', e => {
-    if (x0 === null) return;
-    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
-    x0 = null;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3 && Date.now() - t0 < 800) { if (state.playing) setPlay(false); go(state.i + (dx < 0 ? 1 : -1)); }
-  }, { passive: true });
-  el.addEventListener('click', () => { if (state.zoom) { state.zoom = !state.zoom; render(); } });
+    if (!g) return;
+    const r = rect();
+    if (e.touches.length >= 1) {                   // 핀치 후 손가락 하나가 남음 → 이동으로 이어받기(스와이프로 오인 방지)
+      const a = pt(e.touches[0], r);
+      g = { type: 'pan', x0: a.x, y0: a.y, tx0: tx, ty0: ty, t0: Date.now(), moved: 99, multi: true };
+      return;
+    }
+    const was = g; g = null;
+    if (was.multi || was.type === 'pinch') { if (s < 1.06) reset(true); suppressClick = true; e.preventDefault(); return; }
+
+    const t = e.changedTouches[0], a = pt(t, r), dx = a.x - was.x0, dy = a.y - was.y0, dt = Date.now() - was.t0;
+    if (was.moved < 10 && dt < 300) {              // 탭
+      const now = Date.now();
+      if (now - lastTap < 320 && Math.hypot(a.x - lastTapX, a.y - lastTapY) < 40) {
+        lastTap = 0; suppressClick = true; e.preventDefault();
+        if (zoomed()) reset(true); else { if (state.playing) setPlay(false); zoomAt(a.x, a.y, DBL, true); }
+        return;
+      }
+      lastTap = now; lastTapX = a.x; lastTapY = a.y;
+      return;
+    }
+    if (was.type === 'pan') { suppressClick = true; e.preventDefault(); return; }
+    // 원래 크기일 때만 좌우 스와이프로 단계 이동
+    if (!zoomed() && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3 && dt < 800) {
+      suppressClick = true;
+      if (state.playing) setPlay(false);
+      go(state.i + (dx < 0 ? 1 : -1));
+    }
+  }, { passive: false });
+  el.addEventListener('touchcancel', () => { g = null; if (s < 1.06) reset(true); });
+
+  // 데스크톱: Ctrl+휠(트랙패드 핀치) 확대 · 더블클릭 토글 · 확대 중 마우스 드래그 이동
+  el.addEventListener('wheel', e => {
+    if (!e.ctrlKey && !zoomed()) return;
+    e.preventDefault();
+    const r = rect();
+    zoomAt(e.clientX - r.left, e.clientY - r.top, s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)), false);
+    if (s < 1.02) reset(false);
+  }, { passive: false });
+  el.addEventListener('dblclick', e => {
+    if (e.target.closest('.zreset')) return;
+    const r = rect();
+    if (zoomed()) reset(true); else zoomAt(e.clientX - r.left, e.clientY - r.top, DBL, true);
+  });
+  let md = null;
+  el.addEventListener('mousedown', e => { if (!zoomed() || e.button !== 0 || e.target.closest('.zreset')) return; md = { x: e.clientX, y: e.clientY, tx0: tx, ty0: ty, moved: 0 }; pz.classList.remove('anim'); e.preventDefault(); });
+  window.addEventListener('mousemove', e => { if (!md) return; md.moved = Math.max(md.moved, Math.hypot(e.clientX - md.x, e.clientY - md.y)); tx = md.tx0 + e.clientX - md.x; ty = md.ty0 + e.clientY - md.y; apply(false); });
+  window.addEventListener('mouseup', () => { if (md && md.moved > 4) suppressClick = true; md = null; });
+
+  $('bZReset').addEventListener('click', e => { e.stopPropagation(); reset(true); });
+  el.addEventListener('click', e => {
+    if (suppressClick) { suppressClick = false; return; }
+    if (e.target.closest('.zreset')) return;
+    if (state.zoom) { state.zoom = false; render(); }
+  });
+  window.addEventListener('resize', () => apply(false));
+
+  return { reset, zoomed };
 })();
 
 $('totalTxt').textContent = STEPS.length; $('cntTotal').textContent = STEPS.length;
