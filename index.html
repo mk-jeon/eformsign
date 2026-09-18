@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전자서명 진행 안내 가이드 · eformsign</title>
+<meta name="description" content="이폼사인 전자계약 서명 절차 안내 — 알림톡 수신부터 서명 완료까지 15단계 인터랙티브 가이드">
+<meta name="theme-color" content="#0e1116">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="서명가이드">
+<link rel="preload" as="image" href="assets/s01.jpg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{ --hi:#ff3b30; --bg:#0e1116; --panel:#0b0e13; --line:#202836; --line2:#2a3342; --fg:#e8ecf2; --mute:#8b98ab; --blue:#1857c4; --dim:.5; --cap:17px; }
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; background:var(--bg); color:var(--fg); height:100%; overscroll-behavior:none; -webkit-text-size-adjust:100%; }
+body{ font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif; }
+button{ font-family:inherit; cursor:pointer; }
+a{ color:#4d8dff; text-decoration:none; }
+
+@keyframes ringPulse{ 0%,100%{ box-shadow:0 0 0 3px var(--hi),0 0 0 6px rgba(255,59,48,.18);} 50%{ box-shadow:0 0 0 3px var(--hi),0 0 0 14px rgba(255,59,48,.05);} }
+@keyframes tapPulse{ 0%{ transform:translate(-50%,-50%) scale(.7); opacity:.95;} 70%{ transform:translate(-50%,-50%) scale(1.9); opacity:0;} 100%{ transform:translate(-50%,-50%) scale(1.9); opacity:0;} }
+@keyframes capIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+@keyframes tabNudge{ 0%,70%,100%{ transform:translate(0,-50%);} 80%{ transform:translate(8px,-50%);} 90%{ transform:translate(3px,-50%);} }
+
+#app{ height:100svh; height:100dvh; overflow:hidden; display:flex; flex-direction:column; gap:10px;
+  padding:calc(env(safe-area-inset-top) + 12px) clamp(10px,3vw,24px) calc(env(safe-area-inset-bottom) + 12px); }
+
+/* header */
+.hd{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; border-bottom:1px solid #1e2430; padding-bottom:10px; flex:0 0 auto; }
+.hd .t{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.hd .k{ font-size:11px; letter-spacing:.14em; color:#6d7b90; font-weight:600; }
+.hd h1{ margin:0; font-size:clamp(18px,4.6vw,22px); font-weight:800; letter-spacing:-.02em; line-height:1.2; }
+.hd .s{ font-size:12.5px; color:var(--mute); }
+.hd .s .kb{ display:none; }
+.tools{ display:flex; gap:6px; align-items:center; overflow-x:auto; max-width:100%; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.tools::-webkit-scrollbar{ display:none; }
+.chip{ padding:8px 12px; border-radius:999px; border:1px solid var(--line2); background:transparent; color:#9aa7b9; font-size:12.5px; font-weight:600; white-space:nowrap; min-height:36px; }
+.chip.on{ background:#1a2434; color:#fff; }
+
+/* stage */
+.stage{ display:flex; flex-direction:column; align-items:center; gap:clamp(8px,1.4vh,14px); flex:1 1 auto; min-height:0; }
+.phone{ position:relative; aspect-ratio:1080/2402; flex:1 1 auto; min-height:120px; max-width:100%; border-radius:22px; overflow:hidden; background:#000;
+  container-type:inline-size; box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px #262f3d; touch-action:pan-y; }
+.zoom{ position:absolute; inset:0; transition:transform .5s cubic-bezier(.2,.7,.2,1); transform-origin:50% 50%; }
+.shot{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.veil{ position:absolute; inset:0; background:rgba(8,10,14,var(--dim)); transition:background .3s ease; }
+.box{ position:absolute; border-radius:10px; background-repeat:no-repeat; }
+.box.hard{ box-shadow:0 0 0 3px var(--hi); animation:ringPulse 1.9s ease-in-out infinite; }
+.box.soft{ box-shadow:0 0 0 2px rgba(255,255,255,.35); }
+.lab{ position:absolute; white-space:nowrap; padding:clamp(1px,.7cqi,4px) clamp(3px,1.8cqi,9px); border-radius:clamp(3px,1.4cqi,7px); background:var(--hi); color:#fff;
+  font-size:clamp(6px,3.4cqi,13px); font-weight:700; line-height:1.35; box-shadow:0 4px 12px rgba(0,0,0,.45); }
+.blur{ position:absolute; border-radius:8px; -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); background:rgba(240,243,247,.35); }
+.tap{ position:absolute; width:clamp(28px,16cqi,74px); height:clamp(28px,16cqi,74px); transform:translate(-50%,-50%); border-radius:50%; border:2px solid rgba(255,255,255,.9); animation:tapPulse 1.9s ease-out infinite; pointer-events:none; }
+
+/* caption + nav */
+.bottom{ flex:0 0 auto; width:100%; max-width:640px; display:flex; flex-direction:column; gap:8px; }
+.cap{ width:100%; padding:clamp(10px,1.5vh,16px) 14px; border-radius:14px; background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--hi); display:flex; flex-direction:column; gap:5px; }
+.cap .row{ display:flex; align-items:center; gap:8px; animation:capIn .35s ease both; }
+.cap .no{ padding:3px 9px; border-radius:6px; background:var(--hi); color:#fff; font-size:12px; font-weight:800; }
+.cap .ph{ font-size:13px; color:#96a3b5; font-weight:600; }
+.cap .tx{ font-size:var(--cap); line-height:1.5; font-weight:700; color:#fff; text-wrap:pretty; animation:capIn .45s ease both; }
+.cap .nt{ font-size:13px; line-height:1.5; color:#ffb3ad; font-weight:600; }
+.cap .nt:empty{ display:none; }
+.prog{ height:4px; border-radius:4px; background:#1d2430; overflow:hidden; }
+.prog i{ display:block; height:100%; background:var(--hi); border-radius:4px; transition:width .35s ease; }
+.nav{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.nav .cnt{ font-size:13px; color:var(--mute); font-weight:600; white-space:nowrap; }
+.btn{ padding:12px 20px; border-radius:10px; border:1px solid var(--line2); background:#151b24; color:var(--fg); font-size:14px; font-weight:700; white-space:nowrap; min-height:44px; }
+.btn.pri{ border-color:transparent; background:var(--blue); color:#fff; padding:12px 22px; }
+.btn:disabled{ opacity:.35; cursor:default; }
+
+/* rail */
+#rail{ position:fixed; top:0; left:0; z-index:50; height:100svh; height:100dvh; width:min(330px,86vw); transform:translateX(-101%); transition:transform .38s cubic-bezier(.2,.75,.2,1);
+  overflow-y:auto; display:flex; flex-direction:column; gap:14px; background:#131922; border-right:1px solid var(--line); box-shadow:24px 0 60px rgba(0,0,0,.5);
+  padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 28px); }
+#rail.open{ transform:translateX(0); }
+#rail .rh{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+#rail .rt{ font-size:13px; font-weight:700; color:var(--mute); letter-spacing:.06em; }
+#rail .x{ padding:6px 10px; border-radius:8px; border:1px solid var(--line2); background:#1a2230; color:#c3ccd9; font-size:12px; font-weight:700; }
+.grp{ display:flex; flex-direction:column; gap:5px; }
+.grp .gn{ font-size:12px; font-weight:800; color:#5f6d82; letter-spacing:.08em; padding:4px 0; }
+.it{ display:flex; align-items:center; gap:10px; text-align:left; padding:10px 12px; border-radius:10px; border:1px solid transparent; background:transparent; color:#9aa7b9; font-size:13.5px; font-weight:500; width:100%; line-height:1.35; }
+.it .n{ flex:0 0 22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800; background:#232c3a; color:var(--mute); }
+.it.on{ background:#1a2434; border-color:#2f4260; color:#fff; font-weight:700; }
+.it.on .n{ background:var(--hi); color:#fff; }
+#rail .ft{ border-top:1px solid var(--line); padding-top:12px; font-size:12.5px; line-height:1.6; color:#7d8a9d; }
+#backdrop{ position:fixed; inset:0; z-index:45; background:rgba(6,8,12,.55); opacity:0; pointer-events:none; transition:opacity .3s ease; }
+#backdrop.on{ opacity:1; pointer-events:auto; }
+#tab{ position:fixed; z-index:55; left:0; top:50%; transform:translateY(-50%); display:flex; align-items:center; gap:6px; padding:16px 11px; border-radius:0 14px 14px 0; border:1px solid var(--line2); border-left:none;
+  background:var(--blue); color:#fff; font-size:12.5px; font-weight:800; letter-spacing:.02em; writing-mode:vertical-rl; box-shadow:10px 0 26px rgba(0,0,0,.45); transition:left .38s cubic-bezier(.2,.75,.2,1); animation:tabNudge 3.2s ease-in-out infinite; }
+#tab.open{ left:min(330px,86vw); animation:none; }
+
+@media (min-width:768px){ .hd .s .kb{ display:inline; } .chip{ padding:9px 14px; font-size:13px; } #app{ gap:12px; } }
+@media (max-width:420px){ .hd{ gap:8px; } .hd .s{ font-size:12px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hd">
+    <div class="t">
+      <div class="k">EFORMSIGN · 전자계약</div>
+      <h1>전자서명 진행 안내 가이드</h1>
+      <div class="s">알림톡 수신부터 서명 완료까지 <span id="totalTxt">15</span>단계 · 화면을 좌우로 밀어 이동<span class="kb"> · ← → 키</span></div>
+    </div>
+    <div class="tools">
+      <button class="chip on" id="bDim" type="button">강조 영역만 밝게</button>
+      <button class="chip" id="bZoom" type="button">강조 확대</button>
+      <button class="chip" id="bPlay" type="button">자동재생</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="phone" id="phone">
+      <div class="zoom" id="zoom">
+        <img class="shot" id="shot" alt="" decoding="async">
+        <div class="veil"></div>
+        <div id="layers"></div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="cap">
+        <div class="row"><span class="no">STEP <span id="stepNo">1</span></span><span class="ph" id="phase"></span></div>
+        <div class="tx" id="caption"></div>
+        <div class="nt" id="note"></div>
+      </div>
+      <div class="prog"><i id="prog"></i></div>
+      <div class="nav">
+        <button class="btn" id="bPrev" type="button">← 이전</button>
+        <div class="cnt"><span id="cnt">1</span> / <span id="cntTotal">15</span></div>
+        <button class="btn pri" id="bNext" type="button">다음 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<aside id="rail" aria-label="진행 순서">
+  <div class="rh"><div class="rt">진행 순서</div><button class="x" id="bClose" type="button">닫기 ✕</button></div>
+  <div id="groups"></div>
+  <div class="ft">개인정보가 보이는 화면은 블러 처리되어 있습니다. 서명 링크와 알림톡 메시지는 외부에 공유하지 마세요.</div>
+</aside>
+<div id="backdrop"></div>
+<button id="tab" type="button">진행 순서 ▶</button>
+
+<script>
+const STEPS = [
+  { n:'01', phase:'1. 알림톡 확인', title:'알림톡에서 서명 시작', caption:'카카오톡 알림톡의 [문서 서명하기] 버튼을 누릅니다.', note:'서명 기한 내에 진행해 주세요.',
+    hi:[{x:.176,y:.821,w:.606,h:.048,label:'문서 서명하기'}], tap:{x:.479,y:.845} },
+  { n:'02', phase:'2. 본인인증', title:'인증 수단 선택 후 인증하기', caption:'[휴대폰 본인확인]을 선택하고, 화면 맨 아래 [인증하기]를 누릅니다.',
+    hi:[{x:.035,y:.487,w:.62,h:.155,label:'① 인증 수단'},{x:.042,y:.889,w:.915,h:.058,label:'② 인증하기'}], tap:{x:.50,y:.918} },
+  { n:'03', phase:'2. 본인인증', title:'통신사 선택', caption:'현재 사용 중인 통신사를 선택해 주세요. 알뜰폰은 아래 줄에서 선택합니다.',
+    hi:[{x:.048,y:.335,w:.88,h:.29,label:'이용 중인 통신사'}] },
+  { n:'04', phase:'2. 본인인증', title:'인증 방법 선택', caption:'[문자(SMS) 인증]을 선택하면 앱 설치 없이 바로 진행할 수 있습니다. 동의 후 [다음]을 누릅니다.', note:'PASS 앱이 설치되어 있으면 PASS 인증도 가능합니다.',
+    hi:[{x:.046,y:.479,w:.907,h:.090,label:'문자(SMS) 인증 권장'},{x:.051,y:.640,w:.620,h:.033,label:'동의 체크'},{x:.046,y:.698,w:.907,h:.069,label:'다음'}], tap:{x:.50,y:.732} },
+  { n:'05', phase:'2. 본인인증', title:'개인정보 입력', caption:'이름 · 주민등록번호 · 휴대폰 번호를 입력한 뒤 [확인]을 누릅니다.', note:'예시 화면의 개인정보는 블러 처리되어 있습니다.',
+    hi:[{x:.051,y:.649,w:.898,h:.059,label:'확인'}], blur:[{x:.048,y:.350,w:.902,h:.070},{x:.048,y:.448,w:.902,h:.072},{x:.048,y:.543,w:.902,h:.073}], tap:{x:.50,y:.678} },
+  { n:'06', phase:'2. 본인인증', title:'인증번호 입력', caption:'문자로 받은 인증번호 6자리를 확인해 입력하고 [확인]을 누릅니다.', note:'남은 시간이 지나면 [시간연장]을 눌러 다시 받을 수 있습니다.',
+    hi:[{x:.051,y:.340,w:.542,h:.081,label:'인증번호 6자리'},{x:.616,y:.340,w:.338,h:.081,label:'확인'}], tap:{x:.785,y:.380} },
+  { n:'07', phase:'3. 문서 작성', title:'문서 검토 및 작성', caption:'[문서 검토 및 작성] 버튼을 눌러 계약서를 엽니다.',
+    hi:[{x:.051,y:.508,w:.898,h:.065,label:'문서 검토 및 작성'}], tap:{x:.50,y:.540} },
+  { n:'08', phase:'3. 문서 작성', title:'전자서명 사용 동의', caption:'[전자문서 및 전자서명 사용에 동의합니다]를 체크하고 [계속]을 누릅니다.',
+    hi:[{x:.058,y:.246,w:.78,h:.036,label:'① 동의 체크'},{x:.755,y:.346,w:.199,h:.058,label:'② 계속'}], tap:{x:.855,y:.375} },
+  { n:'09', phase:'3. 문서 작성', title:'필수 항목 입력 시작', caption:'붉은색으로 표시된 항목을 순서대로 입력·서명합니다. [입력 시작]을 누르면 첫 항목으로 이동합니다.', note:'하단 [필수 입력 항목] 개수만큼 모두 입력해야 전송할 수 있습니다.',
+    hi:[{x:.035,y:.170,w:.93,h:.60,soft:true,label:'붉은색 표시 항목 확인'},{x:.759,y:.933,w:.199,h:.046,label:'입력 시작'}], tap:{x:.858,y:.956} },
+  { n:'10', phase:'3. 문서 작성', title:'입력 완료 예시', caption:'체크와 서명이 입력되면 이렇게 표시됩니다. 하단에서 진행 상황(4/9)을 확인하고 [다음]으로 이동합니다.',
+    hi:[{x:.030,y:.930,w:.40,h:.050,label:'진행 상황'},{x:.759,y:.933,w:.199,h:.046,label:'다음'}], tap:{x:.858,y:.956} },
+  { n:'12', phase:'3. 문서 작성', title:'CMS 신청서 입력', caption:'CMS 자동이체 신청서도 동일하게, 붉은색으로 표시된 관계·동의·서명 항목을 모두 입력합니다.', note:'서명란은 두 곳(신청인 · 예금주)입니다.',
+    hi:[{x:.035,y:.300,w:.93,h:.60,soft:true,label:'관계 · 동의 · 서명 모두 입력'}] },
+  { n:'13', phase:'4. 전송·완료', title:'필수 항목 9/9 · 전송', caption:'필수 입력 항목이 9/9가 되면 [전송]이 활성화됩니다. [전송]을 누릅니다.',
+    hi:[{x:.030,y:.930,w:.40,h:.050,label:'9 / 9'},{x:.759,y:.933,w:.199,h:.046,label:'전송'}], tap:{x:.858,y:.956} },
+  { n:'14', phase:'4. 전송·완료', title:'문서 전송 확인', caption:'[문서 전송] 창에서 [전송]을 누르면 제출이 완료됩니다. 메시지 입력은 선택 사항입니다.',
+    hi:[{x:.778,y:.658,w:.157,h:.044,label:'전송'}], tap:{x:.856,y:.680} },
+  { n:'15', phase:'4. 전송·완료', title:'서명 완료 화면', caption:'‘문서가 완료되었습니다!’ 화면이 보이면 서명이 정상 접수된 것입니다. 완료 일시를 확인해 주세요.', hi:[] },
+  { n:'16', phase:'4. 전송·완료', title:'완료 알림톡 확인', caption:'카카오톡으로 최종 완료 알림톡이 도착합니다. [문서 확인하기]에서 완료된 계약서를 내려받을 수 있습니다.', note:'확인 기한이 지나면 문서 재요청이 필요합니다.',
+    hi:[{x:.17,y:.810,w:.64,h:.050,label:'문서 확인하기'}] }
+];
+
+const $ = (id) => document.getElementById(id);
+const pct = (v) => (v * 100).toFixed(3) + '%';
+const src = (st) => 'assets/s' + st.n + '.jpg';
+const state = { i: 0, dim: true, zoom: false, playing: false, rail: false };
+let timer = null;
+
+// deep link: #step-3
+(function(){ const m = location.hash.match(/step-(\d+)/); if (m) state.i = Math.max(0, Math.min(STEPS.length - 1, +m[1] - 1)); })();
+
+function buildRail(){
+  const names = []; STEPS.forEach(s => { if (!names.includes(s.phase)) names.push(s.phase); });
+  const host = $('groups'); host.innerHTML = '';
+  names.forEach(name => {
+    const g = document.createElement('div'); g.className = 'grp';
+    const gn = document.createElement('div'); gn.className = 'gn'; gn.textContent = name; g.appendChild(gn);
+    STEPS.forEach((s, idx) => {
+      if (s.phase !== name) return;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'it'; b.dataset.idx = idx;
+      b.innerHTML = '<span class="n">' + (idx + 1) + '</span><span></span>';
+      b.lastChild.textContent = s.title;
+      b.addEventListener('click', () => { go(idx); setRail(false); });
+      g.appendChild(b);
+    });
+    host.appendChild(g);
+  });
+}
+
+function preload(i){ if (i >= 0 && i < STEPS.length) { const im = new Image(); im.src = src(STEPS[i]); } }
+
+function render(){
+  const i = state.i, st = STEPS[i], hi = st.hi || [], s = src(st);
+  $('shot').src = s; $('shot').alt = st.title;
+  $('stepNo').textContent = i + 1; $('cnt').textContent = i + 1;
+  $('phase').textContent = st.phase; $('caption').textContent = st.caption; $('note').textContent = st.note || '';
+  $('prog').style.width = ((i + 1) / STEPS.length * 100) + '%';
+  $('bPrev').disabled = i === 0; $('bNext').textContent = i === STEPS.length - 1 ? '처음으로 ↺' : '다음 →';
+  document.documentElement.style.setProperty('--dim', state.dim ? .5 : 0);
+
+  const L = $('layers'); L.innerHTML = '';
+  hi.forEach(b => {
+    const d = document.createElement('div'); d.className = 'box ' + (b.soft ? 'soft' : 'hard');
+    d.style.cssText = `left:${pct(b.x)};top:${pct(b.y)};width:${pct(b.w)};height:${pct(b.h)};` +
+      (state.dim ? `background-image:url(${s});background-size:${(100/b.w).toFixed(2)}% ${(100/b.h).toFixed(2)}%;background-position:${(b.w>=1?50:(b.x/(1-b.w))*100).toFixed(2)}% ${(b.h>=1?50:(b.y/(1-b.h))*100).toFixed(2)}%;` : '');
+    if (b.label) {
+      const lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = b.label;
+      const top = (b.h >= .05 || b.y < .06);
+      lab.style.left = b.x < .06 ? '6px' : '0px';
+      lab.style.top = top ? 'clamp(2px,1.2cqi,6px)' : 'auto';
+      lab.style.bottom = top ? 'auto' : 'calc(100% + clamp(2px,1.2cqi,6px))';
+      d.appendChild(lab);
+    }
+    L.appendChild(d);
+  });
+  (st.blur || []).forEach(p => {
+    const d = document.createElement('div'); d.className = 'blur';
+    d.style.cssText = `left:${pct(p.x)};top:${pct(p.y)};width:${pct(p.w)};height:${pct(p.h)};`;
+    L.appendChild(d);
+  });
+  if (st.tap) { const t = document.createElement('div'); t.className = 'tap'; t.style.left = pct(st.tap.x); t.style.top = pct(st.tap.y); L.appendChild(t); }
+
+  const focus = hi.length ? hi[hi.length - 1] : null;
+  const z = $('zoom');
+  z.style.transformOrigin = focus ? pct(focus.x + focus.w / 2) + ' ' + pct(focus.y + focus.h / 2) : '50% 50%';
+  z.style.transform = (state.zoom && focus) ? 'scale(1.55)' : 'scale(1)';
+
+  document.querySelectorAll('.it').forEach(b => b.classList.toggle('on', +b.dataset.idx === i));
+  $('bDim').classList.toggle('on', state.dim); $('bZoom').classList.toggle('on', state.zoom);
+  $('bPlay').classList.toggle('on', state.playing); $('bPlay').textContent = state.playing ? '자동재생 중지' : '자동재생';
+  history.replaceState(null, '', '#step-' + (i + 1));
+  preload(i + 1); preload(i + 2);
+}
+
+function go(n){ state.i = Math.max(0, Math.min(STEPS.length - 1, n)); render(); }
+function setPlay(on){
+  if (timer) { clearInterval(timer); timer = null; }
+  if (on) timer = setInterval(() => { if (state.i >= STEPS.length - 1) { setPlay(false); return; } go(state.i + 1); }, 4600);
+  state.playing = on; render();
+}
+function setRail(on){ state.rail = on; $('rail').classList.toggle('open', on); $('backdrop').classList.toggle('on', on); $('tab').classList.toggle('open', on); $('tab').textContent = on ? '◀ 닫기' : '진행 순서 ▶'; }
+
+$('bPrev').addEventListener('click', () => go(state.i - 1));
+$('bNext').addEventListener('click', () => { if (state.i >= STEPS.length - 1) go(0); else go(state.i + 1); });
+$('bDim').addEventListener('click', () => { state.dim = !state.dim; render(); });
+$('bZoom').addEventListener('click', () => { state.zoom = !state.zoom; render(); });
+$('bPlay').addEventListener('click', () => setPlay(!state.playing));
+$('tab').addEventListener('click', () => setRail(!state.rail));
+$('bClose').addEventListener('click', () => setRail(false));
+$('backdrop').addEventListener('click', () => setRail(false));
+window.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(state.i + 1); if (e.key === 'ArrowLeft') go(state.i - 1); if (e.key === 'Escape') setRail(false); });
+
+// swipe on the phone frame
+(function(){
+  let x0 = null, y0 = null, t0 = 0;
+  const el = $('phone');
+  el.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3 && Date.now() - t0 < 800) { if (state.playing) setPlay(false); go(state.i + (dx < 0 ? 1 : -1)); }
+  }, { passive: true });
+  el.addEventListener('click', () => { if (state.zoom) { state.zoom = !state.zoom; render(); } });
+})();
+
+$('totalTxt').textContent = STEPS.length; $('cntTotal').textContent = STEPS.length;
+buildRail(); render();
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>
