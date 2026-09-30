@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가이드 제작 도구</title>
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="studio.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">가이드 제작 도구 <span class="ver">guide.json v1</span></div>
+  <div class="grow"></div>
+  <label class="fbtn">불러오기 (guide.json + 이미지)<input type="file" id="inImport" multiple accept=".json,image/*,application/json"></label>
+  <button type="button" id="bNew">새로 만들기</button>
+  <button type="button" id="bExport" class="pri">내보내기 (배포용 zip)</button>
+  <span class="save" id="saveState">자동 저장</span>
+</header>
+
+<main class="wrap">
+  <!-- 왼쪽: 가이드 정보 + 단계 목록 -->
+  <aside class="left">
+    <details open>
+      <summary>가이드 정보</summary>
+      <div class="form" id="metaForm">
+        <label>가이드 ID(폴더명) <input data-k="id" placeholder="eformsign"></label>
+        <label>브랜드 표기 <input data-k="brand" placeholder="EFORMSIGN · 전자계약"></label>
+        <label>제목 <input data-k="title"></label>
+        <label>부제 <input data-k="subtitle"></label>
+        <label>표지 제목 <textarea data-k="cover.heading" rows="2"></textarea></label>
+        <label>표지 설명 <textarea data-k="cover.body" rows="3"></textarea></label>
+        <div class="row2">
+          <label>소요 시간 <input data-k="cover.duration" placeholder="약 3분"></label>
+          <label>시작 버튼 <input data-k="cover.button" placeholder="시작하기"></label>
+        </div>
+        <label>표지 아래 안내 <input data-k="cover.hint"></label>
+        <label>종료 제목 <input data-k="end.heading"></label>
+        <label>종료 설명 <textarea data-k="end.body" rows="2"></textarea></label>
+        <label>진행 순서 하단 고지 <textarea data-k="notice" rows="2"></textarea></label>
+        <div class="row3">
+          <label>자동재생(초) <input data-k="autoplaySec" type="number" min="2" max="60" step="0.5"></label>
+          <label>강조색 <input data-k="highlightColor" type="color"></label>
+          <label>어둡기 <input data-k="dim" type="number" min="0" max="0.9" step="0.05"></label>
+        </div>
+      </div>
+    </details>
+    <details open>
+      <summary>단계 목록 <span class="cnt" id="stepCount"></span></summary>
+      <div class="steps" id="stepList"></div>
+      <div class="stepActs">
+        <label class="fbtn">+ 이미지로 단계 추가<input type="file" id="inAddImages" multiple accept="image/*"></label>
+        <button type="button" id="bUp" title="위로">↑</button>
+        <button type="button" id="bDown" title="아래로">↓</button>
+        <button type="button" id="bDup" title="복제">복제</button>
+        <button type="button" id="bDel" class="danger" title="삭제">삭제</button>
+      </div>
+    </details>
+  </aside>
+
+  <!-- 가운데: 캔버스 편집 -->
+  <section class="center">
+    <div class="toolbar">
+      <div class="seg" id="tools">
+        <button type="button" data-tool="select" class="on">선택/이동</button>
+        <button type="button" data-tool="hi">강조 박스</button>
+        <button type="button" data-tool="soft">부드러운 강조</button>
+        <button type="button" data-tool="blur">블러(개인정보)</button>
+        <button type="button" data-tool="tap">탭 위치</button>
+      </div>
+      <div class="grow"></div>
+      <div class="selbox" id="selBox" hidden>
+        <input id="selLabel" placeholder="라벨 (예: ① 인증하기)">
+        <label class="chk"><input type="checkbox" id="selSoft"> 부드럽게</label>
+        <button type="button" id="bDelBox" class="danger">박스 삭제</button>
+      </div>
+    </div>
+    <div class="canvasWrap" id="canvasWrap">
+      <div class="empty" id="emptyHint">왼쪽에서 「이미지로 단계 추가」를 눌러 캡처 이미지를 넣거나, 여기에 이미지를 끌어다 놓으세요.</div>
+      <div class="canvas" id="canvas" hidden>
+        <img id="cImg" alt="" draggable="false">
+        <div id="cLayers"></div>
+      </div>
+    </div>
+    <div class="stepForm" id="stepForm" hidden>
+      <div class="row2">
+        <label>구간(그룹) <input data-s="phase" placeholder="2. 본인인증" list="phaseList"><datalist id="phaseList"></datalist></label>
+        <label>단계 제목 <input data-s="title" placeholder="인증 수단 선택 후 인증하기"></label>
+      </div>
+      <label>설명 문구 <textarea data-s="caption" rows="2"></textarea></label>
+      <label>주의 문구(선택) <input data-s="note"></label>
+      <div class="row2">
+        <label class="fbtn small">이 단계 이미지 교체<input type="file" id="inReplace" accept="image/*"></label>
+        <span class="muted" id="imgInfo"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 오른쪽: 미리보기 -->
+  <aside class="right">
+    <div class="pvHead">미리보기 <button type="button" id="bPvReload" class="small">새로고침</button></div>
+    <div class="pvFrame"><iframe id="pv" title="미리보기"></iframe></div>
+    <div class="muted small">실제 배포 화면과 같은 뷰어입니다. 표지는 미리보기에서 생략됩니다.</div>
+  </aside>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+<script src="studio.js"></script>
+</body>
+</html>
